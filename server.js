@@ -4,21 +4,20 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Substitua abaixo pelo link correto do ngrok ativo
-const NGROK_URL = 'https://adc5-2804-1b3-6147-29cd-6036-d2ee-793b-f28b.ngrok-free.app';
-
-// Proxy reverso
-app.use('/', createProxyMiddleware({
-  target: NGROK_URL,
+// Rota proxy reverso
+app.use('/ngrok', createProxyMiddleware({
+  target: 'https://adc5-2804-1b3-6147-29cd-6036-d2ee-793b-f28b.ngrok-free.app',
   changeOrigin: true,
-  secure: false,
-  ws: true, // suporte para WebSocket, se necessário
-  onError(err, req, res) {
-    console.error('Erro no proxy:', err.message);
-    res.status(502).send('Bad Gateway - erro no proxy reverso');
-  }
+  pathRewrite: {
+    '^/ngrok': '', // remove /ngrok do caminho
+  },
 }));
 
+// Exemplo de rota principal
+app.get('/', (req, res) => {
+  res.send('Servidor rodando com proxy reverso!');
+});
+
 app.listen(PORT, () => {
-  console.log(`Proxy reverso rodando em http://localhost:${PORT}, redirecionando para ${NGROK_URL}`);
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
