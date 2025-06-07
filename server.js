@@ -1,35 +1,45 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const http = require('http');
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
-// Proxy para o ngrok
-app.use('/ngrok', createProxyMiddleware({
-  target: 'https://adc5-2804-1b3-6147-29cd-6036-d2ee-793b-f28b.ngrok-free.app',
+// Middleware do proxy
+app.use('/', createProxyMiddleware({
+  target: 'https://0acc-2804-1b3-6147-29cd-4c02-4d32-79c1-e44c.ngrok-free.app', // seu link do ngrok aqui
   changeOrigin: true,
-  pathRewrite: {
-    '^/ngrok': '', // Remove o prefixo "/ngrok" do caminho
-  },
-  logLevel: 'debug',
-  onError: (err, req, res) => {
-    console.error('Erro no proxy:', err);
-    res.status(500).send('Erro ao acessar o servidor ngrok.');
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    console.log('-> Proxy funcionando para:', req.url);
-  }
+  secure: false,
 }));
-
-// Rota principal
-app.get('/', (req, res) => {
-  res.send(`
-    <h1>Servidor rodando com proxy reverso!</h1>
-    <p><a href="/ngrok" target="_blank">Clique aqui para acessar o conteúdo do ngrok</a></p>
-  `);
-});
 
 // Inicia o servidor
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`Proxy online na porta ${PORT}`);
 });
+
+// Auto-ping a cada 5 minutos para evitar hibernação no Render
+setInterval(() => {
+  http.get(`http://localhost:${PORT}`, (res) => {
+    console.log(`Auto-ping executado. Status: ${res.statusCode}`);
+  }).on('error', (err) => {
+    console.error('Erro no auto-ping:', err.message);
+  });
+}, 5 * 60 * 1000); // 5 minutos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
