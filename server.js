@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy
 app.use('/', createProxyMiddleware({
-  target: 'https://9f83-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
+  target: 'https://8ac0-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
   changeOrigin: true,
   secure: false,
 }));
@@ -55,4 +55,5 @@ setInterval(() => {
 
 
 >>>>>>> ed60bbf5752771dcc9d217659982a138d75a036c
+
 
