@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy
 app.use('/', createProxyMiddleware({
-  target: 'https://1787-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
+  target: 'https://9d58-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
   changeOrigin: true,
   secure: false,
 }));
@@ -26,36 +26,4 @@ setInterval(() => {
     console.error('Erro no auto-ping:', err.message);
   });
 }, 5 * 60 * 1000); // 5 minutos
-
-
-
-
-
-
-
-
-<<<<<<< HEAD
-=======
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> ed60bbf5752771dcc9d217659982a138d75a036c
-
-
-
 
