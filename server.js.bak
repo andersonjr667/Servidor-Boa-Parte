@@ -8,7 +8,11 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy
 app.use('/', createProxyMiddleware({
+<<<<<<< HEAD
   target: 'https://697d-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
+=======
+  target: 'https://ae6f-2804-1b3-6147-1f59-11a2-9a38-3d7e-49c.ngrok-free.app', // seu link do ngrok aqui
+>>>>>>> ed60bbf5752771dcc9d217659982a138d75a036c
   changeOrigin: true,
   secure: false,
 }));
@@ -33,3 +37,24 @@ setInterval(() => {
 
 
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> ed60bbf5752771dcc9d217659982a138d75a036c
