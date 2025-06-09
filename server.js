@@ -8,7 +8,11 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy
 app.use('/', createProxyMiddleware({
-  target: 'https://d876-2804-1b3-6147-1f59-84c6-c18f-905e-76f2.ngrok-free.app', // seu link do ngrok aqui
+<<<<<<< HEAD
+  target: 'https://1a04-2804-1b3-6147-1f59-c158-ead7-4f5f-d32.ngrok-free.app', // seu link do ngrok aqui
+=======
+  target: 'https://1a04-2804-1b3-6147-1f59-c158-ead7-4f5f-d32.ngrok-free.app', // seu link do ngrok aqui
+>>>>>>> 6c8987773b82ef388fa893215495b1eff92248d2
   changeOrigin: true,
   secure: false,
 }));
@@ -18,7 +22,7 @@ app.listen(PORT, () => {
   console.log(`Proxy online na porta ${PORT}`);
 });
 
-// Auto-ping a cada 5 minutos para evitar hibernaÃ§Ã£o no Render
+// Auto-ping a cada 5 minutos para evitar hibernação no Render
 setInterval(() => {
   http.get(`http://localhost:${PORT}`, (res) => {
     console.log(`Auto-ping executado. Status: ${res.statusCode}`);
@@ -27,6 +31,7 @@ setInterval(() => {
   });
 }, 5 * 60 * 1000); // 5 minutos
 
+<<<<<<< HEAD
 
 
 
@@ -53,5 +58,9 @@ setInterval(() => {
 
 
 
+
+
+=======
+>>>>>>> 6c8987773b82ef388fa893215495b1eff92248d2
 
 
