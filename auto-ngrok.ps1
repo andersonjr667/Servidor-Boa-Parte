@@ -59,6 +59,43 @@ else {
     Write-Host "Nenhuma alteração detectada." -ForegroundColor Gray
 }
 
+# --- COMMIT AUTOMÁTICO DA PASTA DB A CADA 10 MINUTOS ---
+$boaPartePath = $serverPath
+$dbPath = Join-Path $proxyPath "db"
+
+Start-Job -ScriptBlock {
+    param($boaPartePath, $dbPath)
+    while ($true) {
+        Set-Location $boaPartePath
+        git add $dbPath
+        $changes = git status --porcelain $dbPath
+        if ($changes) {
+            $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            git commit -m "Commit automático da pasta db $timestamp"
+            git push origin main
+            Write-Host "Commit automático da pasta db realizado em $timestamp" -ForegroundColor Green
+        } else {
+            Write-Host "Nenhuma alteração detectada na pasta db." -ForegroundColor Gray
+        }
+        for ($i = 600; $i -gt 0; $i -= 10) {
+            Write-Host ("[DB] Próximo commit em: {0} segundos" -f $i) -NoNewline
+            Start-Sleep -Seconds 10
+        }
+        Write-Host ""  # Limpa linha
+    }
+} -ArgumentList $boaPartePath, $dbPath | Out-Null
+
+# --- TIMER PARA O COMMIT DO SERVIDOR-BOA-PARTE (NGROK) ---
+Start-Job -ScriptBlock {
+    while ($true) {
+        for ($i = 600; $i -gt 0; $i -= 10) {
+            Write-Host ("[NGROK] Próximo commit em: {0} segundos" -f $i) -NoNewline
+            Start-Sleep -Seconds 10
+        }
+        Write-Host ""  # Limpa linha
+    }
+} | Out-Null
+
 # Retornar para Desktop
 Set-Location "$env:USERPROFILE\Desktop"
 
