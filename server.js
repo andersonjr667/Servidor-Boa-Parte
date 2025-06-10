@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy
 app.use('/', createProxyMiddleware({
-  target: 'https://111e-177-39-9-218.ngrok-free.app', // será atualizado automaticamente pelo script
+  target: 'https://eed2-177-39-9-218.ngrok-free.app', // será atualizado automaticamente pelo script
   changeOrigin: true,
   secure: false,
 }));
@@ -26,6 +26,7 @@ setInterval(() => {
     console.error('Erro no auto-ping:', err.message);
   });
 }, 5 * 60 * 1000); // 5 minutos
+
 
 
 
