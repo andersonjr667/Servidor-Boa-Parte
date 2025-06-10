@@ -6,11 +6,14 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-// Middleware do proxy
+// Middleware do proxy com cabeçalho para ignorar o aviso do ngrok
 app.use('/', createProxyMiddleware({
-  target: 'https://6e85-177-39-9-218.ngrok-free.app', // será atualizado automaticamente pelo script
+  target: 'https://b888-177-39-9-218.ngrok-free.app', // será atualizado automaticamente pelo script
   changeOrigin: true,
   secure: false,
+  onProxyReq: (proxyReq) => {
+    proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
+  }
 }));
 
 // Inicia o servidor
@@ -26,10 +29,4 @@ setInterval(() => {
     console.error('Erro no auto-ping:', err.message);
   });
 }, 5 * 60 * 1000); // 5 minutos
-
-
-
-
-
-
 
