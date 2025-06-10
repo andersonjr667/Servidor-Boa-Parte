@@ -1,65 +1,66 @@
-# Configurações de caminho
+# Caminhos
 $serverPath = "C:\Users\Aluno_Tarde\Desktop\BoaParte"
 $proxyPath = "C:\Users\Aluno_Tarde\Desktop\Servidor-Boa-Parte"
-$ngrokJsonPath = "$serverPath\ngrok.json"
-$proxyServerJsPath = "$proxyPath\server.js"
+$ngrokJsonPath = Join-Path $serverPath "ngrok.json"
+$proxyServerJsPath = Join-Path $proxyPath "server.js"
 
-# Iniciar servidor local
+# Iniciar servidor Node.js
 Start-Process cmd.exe -ArgumentList "/c cd `"$serverPath`" && node server.js"
-Write-Host "Servidor Node iniciado" -ForegroundColor Cyan
+Write-Host "Servidor Node iniciado." -ForegroundColor Cyan
 
-# Aguardar inicializacao
+# Aguardar inicialização
 Start-Sleep -Seconds 15
 
-# Verificar existencia do arquivo ngrok.json
+# Verificar existência do ngrok.json
 if (-not (Test-Path $ngrokJsonPath)) {
-    Write-Host "Erro: ngrok.json nao encontrado" -ForegroundColor Red
-    exit
+    Write-Host "Erro: ngrok.json não encontrado." -ForegroundColor Red
+    exit 1
 }
 
-# Processar arquivo ngrok.json
+# Ler e validar o conteúdo do ngrok.json
 try {
-    $ngrokData = Get-Content $ngrokJsonPath -Raw | ConvertFrom-Json
+    $ngrokData = Get-Content $ngrokJsonPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     $ngrokUrl = $ngrokData.ngrokUrl
-    # Validar URL
+
     if (-not ($ngrokUrl -match '^https://')) {
-        throw "URL invalida: $ngrokUrl"
+        throw "URL inválida: $ngrokUrl"
     }
 }
 catch {
-    Write-Host "Erro no ngrok.json: $_" -ForegroundColor Red
-    exit
+    Write-Host "Erro ao processar ngrok.json: $_" -ForegroundColor Red
+    exit 1
 }
 
-# Atualizar proxy
-Write-Host "Atualizando proxy com URL: $ngrokUrl" -ForegroundColor Yellow
-
-# Fazer backup
+# Backup do server.js do proxy
 $backupPath = "$proxyServerJsPath.bak"
 Copy-Item $proxyServerJsPath $backupPath -Force
 Write-Host "Backup criado: $backupPath" -ForegroundColor DarkGray
 
-# Atualizar URL no arquivo
+# Substituir a URL antiga pela nova
+Write-Host "Atualizando proxy com URL: $ngrokUrl" -ForegroundColor Yellow
 $content = Get-Content $proxyServerJsPath -Raw
-$newContent = $content -replace "target: 'https://[^']*'", "target: '$ngrokUrl'"
-Set-Content $proxyServerJsPath $newContent
+$pattern = "target:\s*['""]https://.*?['""]"
+$replacement = "target: '$ngrokUrl'"
+$newContent = [regex]::Replace($content, $pattern, $replacement)
+Set-Content -Path $proxyServerJsPath -Value $newContent -Encoding UTF8
 
-# Atualizar repositorio Git
+# Commit e push para o Git
 Set-Location $proxyPath
-
 git add .
-$changes = git status --porcelain
 
+$changes = git status --porcelain
 if ($changes) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    git commit -m "Atualizacao automatica ngrok $timestamp"
+    git commit -m "Atualização automática ngrok $timestamp"
     git push origin main
-    Write-Host "Atualizacao enviada para o GitHub" -ForegroundColor Green
+    Write-Host "Atualização enviada para o GitHub." -ForegroundColor Green
 }
 else {
-    Write-Host "Nenhuma alteracao detectada" -ForegroundColor Gray
+    Write-Host "Nenhuma alteração detectada." -ForegroundColor Gray
 }
 
-Set-Location $env:USERPROFILE\Desktop
+# Retornar para Desktop
+Set-Location "$env:USERPROFILE\Desktop"
 
-Read-Host "Operacao concluida. Pressione ENTER para sair"
+# Finalizar
+Read-Host "Operação concluída. Pressione ENTER para sair."

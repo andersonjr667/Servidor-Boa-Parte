@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const http = require('http');
 
@@ -8,11 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy
 app.use('/', createProxyMiddleware({
-<<<<<<< HEAD
-  target: 'https://068c-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
-=======
-  target: 'https://068c-177-39-9-218.ngrok-free.app', // seu link do ngrok aqui
->>>>>>> 6c8987773b82ef388fa893215495b1eff92248d2
+  target: 'https://aaf7-177-39-9-218.ngrok-free.app', // será atualizado automaticamente pelo script
   changeOrigin: true,
   secure: false,
 }));
@@ -22,7 +18,7 @@ app.listen(PORT, () => {
   console.log(`Proxy online na porta ${PORT}`);
 });
 
-// Auto-ping a cada 5 minutos para evitar hiberna??o no Render
+// Auto-ping a cada 5 minutos para evitar hibernação no Render
 setInterval(() => {
   http.get(`http://localhost:${PORT}`, (res) => {
     console.log(`Auto-ping executado. Status: ${res.statusCode}`);
@@ -30,4 +26,5 @@ setInterval(() => {
     console.error('Erro no auto-ping:', err.message);
   });
 }, 5 * 60 * 1000); // 5 minutos
+
 
