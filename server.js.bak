@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy com cabeçalho para ignorar o aviso do ngrok
 app.use('/', createProxyMiddleware({
-  target: 'https://2f99-2804-1b3-6147-11b1-e481-708a-3462-90dc.ngrok-free.app', // será atualizado automaticamente pelo script
+  target: 'https://b67c-2804-1b3-6147-11b1-d1e9-5204-7ab-8fbe.ngrok-free.app', // será atualizado automaticamente pelo script
   changeOrigin: true,
   secure: false,
   onProxyReq: (proxyReq) => {
@@ -29,6 +29,7 @@ setInterval(() => {
     console.error('Erro no auto-ping:', err.message);
   });
 }, 5 * 60 * 1000); // 5 minutos
+
 
 
 
