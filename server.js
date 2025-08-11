@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const TARGET_URL = 'https://9864dc58059c.ngrok-free.app';
+const TARGET_URL = 'https://dddecd547f03.ngrok-free.app';
 
 // Middleware para configurar cabeçalhos CORS
 app.use((req, res, next) => {
