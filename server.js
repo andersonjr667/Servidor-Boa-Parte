@@ -1,149 +1,115 @@
+// proxy-server.js
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, responseInterceptor } = require('http-proxy-middleware');
 const axios = require('axios');
-const dotenv = require('dotenv');
-
-// Configuração de ambiente
-dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const TARGET_URL = process.env.TARGET_URL || 'https://dddecd547f03.ngrok-free.app';
 
-// Variável global para status do serviço
-let isServiceAvailable = true;
-let lastErrorTimestamp = 0;
+// URL do destino
+const TARGET_URL = 'https://dddecd547f03.ngrok-free.app';
 
-// Middleware de segurança
+// Configurações de retry e cache
+const RETRY_INTERVAL = 5000; // 5 segundos entre tentativas
+const MAX_RETRIES = 5;
+let isTargetOnline = false;
+let lastValidResponse = null; // Armazena a última resposta válida (HTML)
+
+// Função para testar se o destino está no ar
+async function checkTarget() {
+  try {
+    await axios.get(TARGET_URL, { timeout: 3000 });
+    if (!isTargetOnline) {
+      console.log(`[Proxy] Destino voltou online: ${TARGET_URL}`);
+    }
+    isTargetOnline = true;
+  } catch (err) {
+    if (isTargetOnline) {
+      console.error(`[Proxy] Destino caiu: ${err.message}`);
+    }
+    isTargetOnline = false;
+  }
+}
+setInterval(checkTarget, RETRY_INTERVAL);
+checkTarget();
+
+// Middleware para headers padrão
 app.use((req, res, next) => {
-  // Headers para evitar problemas com ngrok
-  res.header('ngrok-skip-browser-warning', 'true');
-  res.header('X-Proxy-Server', 'Render-Proxy');
-  
-  // Política de segurança básica
-  res.header('Content-Security-Policy', "default-src 'self'");
-  res.header('X-Content-Type-Options', 'nosniff');
-  
+  res.setHeader('X-Proxy-Server', 'Render-Proxy');
   next();
 });
 
-// Verificador de saúde do backend
-async function checkBackendHealth() {
-  try {
-    const response = await axios.get(TARGET_URL, {
-      timeout: 3000,
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    });
-    
-    return response.status >= 200 && response.status < 500;
-  } catch (error) {
-    console.error(`[Health Check] Falha: ${error.message}`);
-    return false;
-  }
-}
-
-// Atualizador periódico de status
-async function updateServiceStatus() {
-  try {
-    const isHealthy = await checkBackendHealth();
-    isServiceAvailable = isHealthy;
-    
-    if (!isHealthy) {
-      lastErrorTimestamp = Date.now();
-      console.error(`[Critical] Backend offline desde: ${new Date(lastErrorTimestamp).toISOString()}`);
-    }
-    
-    console.log(`[Health Update] Status: ${isHealthy ? 'ONLINE' : 'OFFLINE'}`);
-    return isHealthy;
-  } catch (error) {
-    console.error(`[Status Update Error] ${error.message}`);
-    return false;
-  }
-}
-
-// Configuração avançada do proxy
-const proxyOptions = {
+// Proxy reverso com cache
+app.use('/', createProxyMiddleware({
   target: TARGET_URL,
   changeOrigin: true,
-  secure: false,
-  timeout: 10000, // 10 segundos
-  proxyTimeout: 10000,
-  onProxyReq: (proxyReq) => {
-    proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
-    proxyReq.setHeader('X-Forwarded-For', proxyReq.socket.remoteAddress);
+  selfHandleResponse: true, // Necessário para interceptar e salvar cache
+  onProxyReq: (proxyReq, req) => {
+    console.log(`[Proxy] ${req.method} ${req.originalUrl}`);
   },
-  onError: (err, req, res) => {
-    console.error(`[Proxy Error] ${err.message} - Path: ${req.path}`);
-    
-    // Tentativa de recuperação automática
-    if (!isServiceAvailable) {
-      return res.status(503).json({
-        status: 'maintenance',
-        message: 'Estamos realizando manutenções. Por favor, tente novamente em alguns minutos.'
-      });
-    }
-    
-    res.status(502).json({
-      status: 'temporary_error',
-      message: 'Estamos enfrentando problemas técnicos momentâneos. Tente recarregar a página.'
-    });
-  },
-  onProxyRes: (proxyRes) => {
-    // Sanitização de headers
-    delete proxyRes.headers['x-powered-by'];
-    delete proxyRes.headers['server'];
-    
-    // Segurança adicional
-    proxyRes.headers['X-Proxy-Server'] = 'Render-Proxy';
-  }
-};
+  onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
+    try {
+      const contentType = proxyRes.headers['content-type'] || '';
+      const body = responseBuffer.toString('utf8');
 
-// Middleware principal
-app.use(async (req, res, next) => {
-  // Rotas especiais para monitoramento
-  if (req.path === '/proxy-health') {
-    const status = isServiceAvailable ? 'online' : 'offline';
-    return res.json({
-      status,
-      last_error: lastErrorTimestamp,
-      backend: TARGET_URL
-    });
+      // Só guarda no cache se for HTML/texto
+      if (contentType.includes('text/html') || contentType.includes('application/json')) {
+        lastValidResponse = { body, contentType };
+      }
+
+      return body;
+    } catch (err) {
+      console.error('[Cache Error]', err.message);
+      return responseBuffer;
+    }
+  }),
+  onError: async (err, req, res) => {
+    console.error('[Proxy Error]', err.message);
+
+    // Retry automático
+    let attempts = 0;
+    const tryReconnect = setInterval(async () => {
+      attempts++;
+      await checkTarget();
+      if (isTargetOnline || attempts >= MAX_RETRIES) {
+        clearInterval(tryReconnect);
+      }
+    }, RETRY_INTERVAL);
+
+    // Se houver cache, serve o último conteúdo válido
+    if (lastValidResponse) {
+      console.warn('[Proxy] Servindo conteúdo do cache...');
+      res.setHeader('Content-Type', lastValidResponse.contentType);
+      return res.status(200).send(lastValidResponse.body);
+    }
+
+    // Se não tiver cache, mostra fallback
+    res.status(200).send(`
+      <html>
+        <head><title>Serviço temporariamente indisponível</title></head>
+        <body style="font-family:sans-serif;text-align:center;margin-top:50px;">
+          <h1>⚠ Serviço temporariamente indisponível</h1>
+          <p>Tentando reconexão... (${attempts}/${MAX_RETRIES})</p>
+          <p>Por favor, tente novamente em alguns instantes.</p>
+        </body>
+      </html>
+    `);
+  },
+  proxyTimeout: 10000,
+  timeout: 12000,
+}));
+
+// Tratamento global de erros
+app.use((err, req, res, next) => {
+  console.error('[App Error]', err.message);
+  if (lastValidResponse) {
+    console.warn('[App] Servindo cache por falha global...');
+    res.setHeader('Content-Type', lastValidResponse.contentType);
+    return res.status(200).send(lastValidResponse.body);
   }
-  
-  // Bloqueia requisições se o serviço estiver offline
-  if (!isServiceAvailable) {
-    return res.status(503).json({
-      code: 'service_unavailable',
-      message: 'Serviço temporariamente indisponível. Estamos trabalhando para resolver.'
-    });
-  }
-  
-  // Proxy para requisições normais
-  createProxyMiddleware(proxyOptions)(req, res, next);
+  res.status(200).send('Ocorreu um problema temporário. Tente novamente mais tarde.');
 });
 
-// Inicialização segura
-async function startServer() {
-  try {
-    // Verificação inicial
-    await updateServiceStatus();
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Proxy ativo na porta ${PORT}`);
-      console.log(`🔗 Encaminhando para: ${TARGET_URL}`);
-      console.log(`✅ Status inicial: ${isServiceAvailable ? 'CONECTADO' : 'OFFLINE'}`);
-      
-      // Monitoramento contínuo
-      setInterval(updateServiceStatus, 15000); // 15 segundos
-    });
-  } catch (startupError) {
-    console.error(`[Fatal] Falha na inicialização: ${startupError.message}`);
-    process.exit(1);
-  }
-}
-
-// Inicia o servidor com tratamento de erros
-startServer().catch(err => {
-  console.error(`[Critical Startup Failure] ${err}`);
-  process.exit(1);
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Proxy com retry + cache ativo na porta ${port} → ${TARGET_URL}`);
 });
