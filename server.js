@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware do proxy com cabeçalho para ignorar o aviso do ngrok
 app.use('/', createProxyMiddleware({
-  target: 'https://9864dc58059c.ngrok-free.app', // será atualizado automaticamente pelo script
+  target: 'https://5c4f1af60b08.ngrok-free.app', // será atualizado automaticamente pelo script
   changeOrigin: true,
   secure: false,
   onProxyReq: (proxyReq) => {
