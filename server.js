@@ -12,7 +12,7 @@ const TARGET_URL = 'https://a688236b3bec.ngrok-free.app';
 const RETRY_INTERVAL = 5000; // 5 segundos entre tentativas
 const MAX_RETRIES = 5;
 let isTargetOnline = false;
-let lastValidResponse = null; // Armazena a última resposta válida (HTML)
+let lastValidResponse = null; // Armazena última resposta válida (texto/binário)
 
 // Função para testar se o destino está no ar
 async function checkTarget() {
@@ -52,7 +52,7 @@ app.use(
       try {
         const contentType = proxyRes.headers['content-type'] || '';
 
-        // Se for texto (HTML/JSON/CSS/JS etc.)
+        // Conteúdo textual
         if (
           contentType.includes('text/html') ||
           contentType.includes('application/json') ||
@@ -60,16 +60,23 @@ app.use(
           contentType.includes('application/javascript')
         ) {
           const body = responseBuffer.toString('utf8');
-          // Cache apenas de conteúdos de texto
-          lastValidResponse = { body, contentType };
+          lastValidResponse = { body, contentType, isBuffer: false };
           return body;
         }
 
-        // Se for imagem ou outro binário → devolve sem mexer
+        // Conteúdo binário (imagens, pdf, etc.)
+        if (
+          contentType.includes('image/') ||
+          contentType.includes('application/octet-stream')
+        ) {
+          lastValidResponse = { body: responseBuffer, contentType, isBuffer: true };
+          return responseBuffer;
+        }
+
         return responseBuffer;
       } catch (err) {
         console.error('[Cache Error]', err.message);
-        return responseBuffer; // fallback
+        return responseBuffer;
       }
     }),
     onError: async (err, req, res) => {
@@ -89,10 +96,13 @@ app.use(
       if (lastValidResponse) {
         console.warn('[Proxy] Servindo conteúdo do cache...');
         res.setHeader('Content-Type', lastValidResponse.contentType);
+        if (lastValidResponse.isBuffer) {
+          return res.status(200).end(lastValidResponse.body);
+        }
         return res.status(200).send(lastValidResponse.body);
       }
 
-      // Se não tiver cache, mostra fallback
+      // Fallback sem cache
       res.status(200).send(`
         <html>
           <head><title>Serviço temporariamente indisponível</title></head>
@@ -115,6 +125,9 @@ app.use((err, req, res, next) => {
   if (lastValidResponse) {
     console.warn('[App] Servindo cache por falha global...');
     res.setHeader('Content-Type', lastValidResponse.contentType);
+    if (lastValidResponse.isBuffer) {
+      return res.status(200).end(lastValidResponse.body);
+    }
     return res.status(200).send(lastValidResponse.body);
   }
   res.status(200).send('Ocorreu um problema temporário. Tente novamente mais tarde.');
