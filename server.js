@@ -6,7 +6,7 @@ const axios = require('axios');
 const app = express();
 
 // URL do destino
-const TARGET_URL = 'https://a688236b3bec.ngrok-free.app';
+const TARGET_URL = 'https://f24d837be443.ngrok-free.app';
 
 // Configurações de retry e cache
 const RETRY_INTERVAL = 5000; // 5 segundos entre tentativas
