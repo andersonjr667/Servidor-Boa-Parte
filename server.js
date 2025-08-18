@@ -17,7 +17,10 @@ let lastValidResponse = null; // Armazena última resposta válida (texto/binár
 // Função para testar se o destino está no ar
 async function checkTarget() {
   try {
-    await axios.get(TARGET_URL, { timeout: 3000 });
+    await axios.get(TARGET_URL, { 
+      timeout: 3000,
+      headers: { 'ngrok-skip-browser-warning': 'true' } // Adiciona header para bypass
+    });
     if (!isTargetOnline) {
       console.log(`[Proxy] Destino voltou online: ${TARGET_URL}`);
     }
@@ -47,6 +50,8 @@ app.use(
     selfHandleResponse: true, // Necessário para interceptar e salvar cache
     onProxyReq: (proxyReq, req) => {
       console.log(`[Proxy] ${req.method} ${req.originalUrl}`);
+      // Adiciona header para bypass do aviso do ngrok
+      proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
     },
     onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
       try {
