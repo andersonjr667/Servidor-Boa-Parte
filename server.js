@@ -6,7 +6,7 @@ const axios = require('axios');
 const app = express();
 
 // URL do destino
-const TARGET_URL = 'https://3c5b01634ca0.ngrok-free.app';
+const TARGET_URL = 'https://boaparte.loca.lt/';
 
 // Configurações de retry e cache
 const RETRY_INTERVAL = 5000; // 5 segundos entre tentativas
