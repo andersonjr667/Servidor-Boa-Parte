@@ -10,7 +10,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 const TARGET = (
   process.env.PROXY_TARGET ||
-  'https://harold-korea-booth-apart.trycloudflare.com/'
+  'https://heritage-mysql-doe-capitol.trycloudflare.com/'
 ).replace(/\/+$/, '');
 
 const proxy = createProxyMiddleware({
