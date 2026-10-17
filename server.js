@@ -10,7 +10,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 const TARGET = (
   process.env.PROXY_TARGET ||
-  'https://temp-exclusive-conversations-lyrics.trycloudflare.com'
+  'https://wind-congress-kentucky-playstation.trycloudflare.com'
 ).replace(/\/+$/, '');
 
 const proxy = createProxyMiddleware({
